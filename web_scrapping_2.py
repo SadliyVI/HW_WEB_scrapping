@@ -25,6 +25,7 @@ def write_result_to_json(data, filename):
     except Exception as e:
         print(f'Произошла неожиданная ошибка: {e}')
 
+
 def fetch_with_retry(url, headers, timeout=10, max_retries=3, retry_delay=5):
     for attempt in range(max_retries):
         try:
@@ -40,6 +41,18 @@ def fetch_with_retry(url, headers, timeout=10, max_retries=3, retry_delay=5):
                 print(
                     'Достигнуто максимальное количество попыток. Запрос не удался.')
                 return None
+
+def get_article_text(article_link):
+    response = requests.get(article_link)
+    pprint(response.text)
+    soup = bs4.BeautifulSoup(response.text, features='lxml')
+    articles_text = soup.select_one(
+        'article.tm-article-presenter_content').text
+    return articles_text
+
+
+# text = get_article_text('https://habr.com/ru/companies/kts/articles/882078/')
+# print(text)
 
 headers = Headers(browser='chrome', os='win').generate()
 url = 'https://habr.com/ru/articles'
@@ -82,8 +95,4 @@ for article in tqdm(articles_tag, desc="Обработка статей", unit="
 
 write_result_to_json(parsed_data,'parsed_data.json')
 pprint(parsed_data)
-
-
-
-
 
