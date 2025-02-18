@@ -32,7 +32,7 @@ def fetch_with_retry(url, headers, timeout=10, max_retries=3, retry_delay=5):
             response.raise_for_status()
             return BeautifulSoup(response.content, 'lxml')
         except requests.RequestException as e:
-            print(f"Попытка {attempt + 1} не удалась: {e}")
+            print(f'Попытка {attempt + 1} не удалась: {e}')
             if attempt < max_retries - 1:
                 print(f'Повторная попытка через {retry_delay} секунд...')
                 time.sleep(retry_delay)
@@ -46,7 +46,7 @@ url = 'https://habr.com/ru/articles'
 soup = fetch_with_retry(url, headers)
 articles_tag = soup.find_all('article')
 parsed_data = []
-for article in tqdm(articles_tag, desc="Обработка статей", unit="статью"):
+for article in tqdm(articles_tag, desc='Обработка статей', unit='статью'):
 # for article in articles_tag:
     time.sleep(2)
     word_set = []
@@ -74,11 +74,11 @@ for article in tqdm(articles_tag, desc="Обработка статей", unit="
     result = find_matching_words(KEY_WORDS, word_set)
     if result:
         parsed_data.append({
-            'link': article.select_one('a.tm-title__link')['href'],
             'time': article.select_one('time')['datetime'],
             'title': article.h2.text,
-            'article_text': text})
-            # 'articles_text': article.select_one('div.article-formatted-body').get_text().strip()})
+            'link': 'https://habr.com' + article.select_one(
+            'a.tm-article-datetime-published.tm-article-datetime'
+            '-published_link')['href']})
 
 write_result_to_json(parsed_data,'parsed_data.json')
 pprint(parsed_data)
