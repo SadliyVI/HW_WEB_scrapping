@@ -85,7 +85,7 @@ for article in tqdm(articles_tag, desc='Обработка статей', unit='
         parsed_data.append({
             'time': article.select_one('time')['datetime'],
             'title': article.h2.text,
-            'link': article.select_one('a.tm-title__link')['href']})
+            'link': article_link})
 
 write_result_to_json(parsed_data,'parsed_data_2.json')
 pprint(parsed_data)
