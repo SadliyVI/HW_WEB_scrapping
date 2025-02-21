@@ -9,11 +9,15 @@ from tqdm import tqdm
 
 KEY_WORDS = ['дизайн', 'фото', 'web', 'python']
 
-def check_word_in_list(word, word_list):
-    return any(word.lower() in item.lower() for item in word_list)
+# def check_word_in_list(word, word_list):
+#     return any(word.lower() in item.lower() for item in word_list)
+#
+# def find_matching_words(source_list, target_list):
+#     return any(check_word_in_list(word, target_list) for word in source_list)
 
+# Заменить на одну функцию использующую set()
 def find_matching_words(source_list, target_list):
-    return any(check_word_in_list(word, target_list) for word in source_list)
+    return any(word.lower() in target_list for word in source_list)
 
 def write_result_to_json(data, filename):
     try:
@@ -57,35 +61,49 @@ def get_article_text(article_link, headers):
 headers = Headers(browser='chrome', os='win').generate()
 url = 'https://habr.com/ru/articles'
 soup = fetch_with_retry(url, headers)
-articles_tag = soup.find_all('article')
-parsed_data = []
-for article in tqdm(articles_tag, desc='Обработка статей', unit='статью'):
-    time.sleep(2)
-    word_set = []
-    article_title_word = article.h2.text.split()
-    article_hubs = article.find_all('span', class_ =
-                                    'tm-publication-hub__link-container')
-    hubs_word = []
-    for hub in article_hubs:
-        hubs_word.extend(hub.text.strip('*').split())
-    artical_body_words = []
-    article_link = 'https://habr.com' + article.select_one(
-                   'a.tm-article-datetime-published.tm-article-datetime'
-                   '-published_link')['href']
-    article_text = get_article_text(article_link, headers)
-    article_text = article_text.replace('\xa0', '')
-    artical_body_words = article_text.split()
-    word_set.extend(article_title_word)
-    word_set.extend(hubs_word)
-    word_set.extend(artical_body_words)
-    word_set = set(word_set)
-    word_set = list(word_set)
-    result = find_matching_words(KEY_WORDS, word_set)
-    if result:
-        parsed_data.append({
-            'time': article.select_one('time')['datetime'],
-            'title': article.h2.text,
-            'link': article_link})
+if soup is None: # Добавлено по замечаниям преподавателя
+    print('Ошибка: Не удалось загрузить главную страницу!')
+    exit()
+else:
+    articles_tag = soup.find_all('article')
+    parsed_data = []
+    for article in tqdm(articles_tag, desc='Обработка статей', unit='статью'):
+        time.sleep(2)
+        word_set = []
+        article_title_word = article.h2.text.split()
+        article_hubs = article.find_all('span', class_ =
+                                        'tm-publication-hub__link-container')
+        hubs_word = []
+        for hub in article_hubs:
+            hubs_word.extend(hub.text.strip('*').split())
+        artical_body_words = []
+
+        # Изменено по замечаниям# преподавателя
+        article_link_element = article.select_one('a.tm-title__link')
+        article_link = 'https://habr.com' + article_link_element[
+            'href'] if article_link_element else 'Нет ссылки'
+        # article_link = 'https://habr.com' + article.select_one(
+        #                'a.tm-article-datetime-published.tm-article-datetime'
+        #                '-published_link')['href']
+
+        # Изменено по замечаниям# преподавателя
+        article_text = get_article_text(article_link, headers)
+        article_text = article_text.replace('\xa0', '')
+        artical_body_words = article_text.split()
+
+        # word_set.extend(article_title_word)
+        # word_set.extend(hubs_word)
+        # word_set.extend(artical_body_words)
+        # word_set = set(word_set)
+        word_set = set(article_title_word + hubs_word + artical_body_words)
+        word_set = list(word_set)
+
+        result = find_matching_words(KEY_WORDS, word_set)
+        if result:
+            parsed_data.append({
+                'time': article.select_one('time')['datetime'],
+                'title': article.h2.text,
+                'link': article_link})
 
 write_result_to_json(parsed_data,'parsed_data_2.json')
 pprint(parsed_data)
